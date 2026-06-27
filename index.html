@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quantum Inventory</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#f8fafc;--panel:#ffffff;--panel-2:#f1f5f9;--panel-3:#e2e8f0;
+      --text:#0f172a;--muted:#64748b;--muted-2:#94a3b8;
+      --border:#e2e8f0;--border-strong:#cbd5e1;
+      --accent:#1d4ed8;--accent-2:#2563eb;--indigo:#6366f1;
+      --emerald:#10b981;--amber:#f59e0b;--red:#ef4444;
+      --navy:#080f1e;--navy-2:#0f2341;--navy-3:#1e3a5f;
+      --shadow-sm:0 1px 3px rgba(15,23,42,0.08);
+      --shadow-md:0 4px 12px rgba(15,23,42,0.12);
+    }
+    body[data-theme="dark"]{
+      --bg:#080f1e;--panel:#0f2341;--panel-2:#080f1e;--panel-3:#060d1a;
+      --text:#e2e8f0;--muted:#94a3b8;--muted-2:#64748b;
+      --border:#1e3a5f;--border-strong:#1e3a5f;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;overscroll-behavior:none;}
+    .mono{font-family:monospace;}
+
+    /* HEADER */
+    .header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--navy);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:52px;border-bottom:1px solid rgba(99,102,241,0.2);}
+    .header-brand{display:flex;align-items:center;gap:10px;}
+    .header-logo{width:32px;height:32px;}
+    .header-title{font-size:14px;font-weight:700;color:#fff;}
+    .header-title span{color:#6366f1;}
+    .header-sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px;}
+    .header-actions{display:flex;align-items:center;gap:8px;}
+    .header-btn{width:32px;height:32px;border-radius:9px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;text-decoration:none;}
+
+    /* BODY */
+    .body{min-height:100vh;padding-top:52px;}
+
+    /* SCREENS */
+    .screen{display:none;padding:16px 16px 80px;}
+    .screen.active{display:block;}
+
+    /* HOME SCREEN */
+    .home-hero{background:var(--navy);margin:-16px -16px 20px;padding:28px 16px 24px;text-align:center;}
+    .home-hero-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
+    .home-hero-title span{color:#6366f1;}
+    .home-hero-sub{font-size:12px;color:rgba(255,255,255,0.5);}
+
+    .type-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow-sm);transition:all 0.15s;}
+    .type-card:active{opacity:0.8;transform:scale(0.98);}
+    .type-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+    .type-icon.checkin{background:rgba(16,185,129,0.1);color:var(--emerald);}
+    .type-icon.checkout{background:rgba(245,158,11,0.1);color:var(--amber);}
+    .type-title{font-size:15px;font-weight:700;color:var(--text);}
+    .type-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+    .section-heading{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:20px 0 10px;}
+    .recent-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:var(--shadow-sm);}
+    .recent-card:active{opacity:0.7;}
+    .recent-addr{font-size:13px;font-weight:600;color:var(--text);}
+    .recent-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+    .badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:3px 8px;border-radius:6px;}
+    .badge-in{background:rgba(16,185,129,0.1);color:#059669;}
+    .badge-out{background:rgba(245,158,11,0.1);color:#b45309;}
+    .badge-done{background:rgba(99,102,241,0.12);color:#6366f1;}
+
+    /* GRADING REFERENCE */
+    .grade-ref{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+    .grade-ref-toggle{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+    .grade-ref-body{display:none;padding:10px 14px;border-top:1px solid var(--border);}
+    .grade-ref-body.open{display:block;}
+    .grade-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12px;}
+    .grade-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+    /* FORM */
+    .form-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;display:block;}
+    .form-input{width:100%;background:var(--panel-2);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;outline:none;margin-bottom:14px;}
+    .form-input:focus{border-color:var(--accent);}
+    select.form-input{appearance:none;-webkit-appearance:none;}
+    textarea.form-input{resize:none;min-height:80px;}
+    .primary-btn{width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;}
+    .primary-btn:disabled{opacity:0.5;}
+    .secondary-btn{width:100%;padding:12px;border-radius:12px;background:var(--panel-2);color:var(--muted);border:1.5px solid var(--border-strong);font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:10px;}
+
+    /* ROOM PROGRESS */
+    .room-progress{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow-sm);}
+    .room-progress-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+    .room-progress-text{font-size:12px;color:var(--muted);font-weight:600;}
+    .progress-bar{height:4px;background:var(--border-strong);border-radius:2px;overflow:hidden;}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#1d4ed8);border-radius:2px;transition:width 0.3s;}
+
+    /* ROOM CARDS */
+    .room-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:var(--shadow-sm);transition:all 0.15s;}
+    .room-card:active{opacity:0.8;}
+    .room-card.done{border-color:var(--emerald);}
+    .room-left{display:flex;align-items:center;gap:12px;}
+    .room-icon{width:38px;height:38px;border-radius:10px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+    .room-card.done .room-icon{background:rgba(16,185,129,0.1);color:var(--emerald);}
+    .room-name{font-size:13px;font-weight:700;color:var(--text);}
+    .room-status{font-size:11px;color:var(--muted);margin-top:2px;}
+    .room-right{display:flex;align-items:center;gap:8px;}
+    .photo-count{font-size:11px;font-weight:700;color:var(--indigo);font-family:monospace;}
+
+    /* ROOM DETAIL - CONDITION BUTTONS */
+    .condition-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+    .cond-btn{padding:12px 8px;border-radius:12px;border:1.5px solid var(--border-strong);background:var(--panel-2);font-size:12px;font-weight:700;cursor:pointer;text-align:center;font-family:'Inter',sans-serif;color:var(--muted);transition:all 0.15s;}
+    .cond-btn.active-excellent{background:rgba(16,185,129,0.12);border-color:var(--emerald);color:#059669;}
+    .cond-btn.active-good{background:rgba(99,102,241,0.12);border-color:var(--indigo);color:var(--indigo);}
+    .cond-btn.active-poor{background:rgba(239,68,68,0.1);border-color:var(--red);color:var(--red);}
+    .cond-btn.active-na{background:rgba(100,116,139,0.1);border-color:var(--muted);color:var(--muted);}
+
+    /* ITEMS TABLE */
+    .items-section{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow-sm);}
+    .items-section-header{padding:10px 14px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);}
+    .item-row{border-bottom:1px solid var(--border);padding:10px 14px;}
+    .item-row:last-child{border-bottom:none;}
+    .item-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;}
+    .item-grades{display:flex;gap:6px;flex-wrap:wrap;}
+    .item-grade-btn{padding:5px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--panel-2);font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);transition:all 0.12s;}
+    .item-grade-btn.active-excellent{background:rgba(16,185,129,0.12);border-color:var(--emerald);color:#059669;}
+    .item-grade-btn.active-good{background:rgba(99,102,241,0.12);border-color:var(--indigo);color:var(--indigo);}
+    .item-grade-btn.active-poor{background:rgba(239,68,68,0.1);border-color:var(--red);color:var(--red);}
+    .item-grade-btn.active-na{background:rgba(100,116,139,0.1);border-color:var(--muted);color:var(--muted);}
+    .item-notes{margin-top:8px;}
+    .item-notes input{width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);font-family:'Inter',sans-serif;outline:none;}
+    .item-notes input:focus{border-color:var(--accent);}
+
+    /* PHOTOS */
+    .photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+    .photo-thumb{aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;background:var(--panel-2);border:1.5px solid var(--border-strong);}
+    .photo-thumb img{width:100%;height:100%;object-fit:cover;}
+    .photo-thumb-del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.9);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;border:none;}
+    .add-photo-btn{aspect-ratio:1;border-radius:10px;border:2px dashed var(--border-strong);background:var(--panel-2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:4px;color:var(--muted);font-size:11px;font-weight:600;}
+    .add-photo-btn i{font-size:20px;}
+
+    /* COMPLIANCE HUB */
+    .comp-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+    .comp-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+    .comp-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;}
+    .comp-row .form-input{margin-bottom:0;flex:1;}
+    .comp-row .photo-trigger{width:44px;height:44px;border-radius:10px;border:1.5px solid var(--border-strong);background:var(--panel-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:16px;flex-shrink:0;}
+    .comp-row .photo-trigger.has-photo{background:rgba(99,102,241,0.12);border-color:var(--indigo);color:var(--indigo);}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .toggle-label{font-size:13px;font-weight:600;color:var(--text);}
+    .toggle-btns{display:flex;gap:6px;}
+    .toggle-btn{padding:5px 14px;border-radius:8px;border:1.5px solid var(--border-strong);background:var(--panel-2);font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);}
+    .toggle-btn.active-yes{background:rgba(16,185,129,0.12);border-color:var(--emerald);color:#059669;}
+    .toggle-btn.active-no{background:rgba(239,68,68,0.1);border-color:var(--red);color:var(--red);}
+
+    /* WHITE GOODS */
+    .wg-row{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+    .wg-name{font-size:13px;font-weight:600;color:var(--text);flex:1;}
+    .wg-del{width:28px;height:28px;border-radius:8px;border:none;background:rgba(239,68,68,0.1);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+    .add-wg-row{display:flex;gap:8px;align-items:center;}
+    .add-wg-row input{flex:1;background:var(--panel-2);border:1.5px solid var(--border-strong);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;}
+    .add-wg-btn{padding:10px 16px;border-radius:10px;background:var(--indigo);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+    /* SIGNATURE */
+    .sig-canvas{width:100%;height:160px;border:1.5px solid var(--border-strong);border-radius:12px;background:#fff;touch-action:none;cursor:crosshair;display:block;}
+    .sig-clear{font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 0;display:block;margin-top:4px;}
+
+    /* SUMMARY */
+    .summary-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+    .summary-room-header{padding:12px 14px;background:var(--panel-2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .summary-room-name{font-size:13px;font-weight:700;color:var(--text);}
+    .summary-photos{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;}
+    .summary-photo{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+    .summary-notes{padding:0 14px 10px;font-size:12px;color:var(--muted);}
+
+    /* PDF BTN */
+    .pdf-btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#1d4ed8);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;justify-content:center;}
+    .modal-card{background:var(--panel);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:90vh;overflow-y:auto;}
+    .modal-handle{width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:0 auto 16px;}
+    .hidden{display:none!important;}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:600;opacity:0;transition:all 0.25s;z-index:500;white-space:nowrap;pointer-events:none;border:1px solid rgba(99,102,241,0.3);}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    /* EMPTY STATE */
+    .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+    .empty-state i{font-size:36px;margin-bottom:12px;display:block;color:var(--border-strong);}
+    .empty-state-text{font-size:13px;}
+
+    /* BACK BTN */
+    .back-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border-strong);background:var(--panel-2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+    /* ── NAV DRAWER ── */
+    #nav-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.5);}
+    #nav-overlay.nav-open{display:block;}
+    #nav-drawer{display:none;position:fixed;top:0;right:0;bottom:0;z-index:301;width:280px;background:#0f2341;border-left:1px solid rgba(99,102,241,0.2);flex-direction:column;overflow-y:auto;transition:transform 0.25s;}
+    #nav-drawer.nav-open{display:flex;}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:13px 20px;font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'Inter',sans-serif;}
+    .nav-item:active{background:rgba(99,102,241,0.15);color:#fff;}
+    .nav-icon{width:18px;font-size:14px;color:#6366f1;text-align:center;flex-shrink:0;}
+    .prop-card{background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-sm);}
+    .comp-card{border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left-width:4px;border-left-style:solid;}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand">
+    <svg class="header-logo" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="qr-ring" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a855f7"/><stop offset="50%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+      <circle cx="17" cy="17" r="16" stroke="url(#qr-ring)" stroke-width="2.5" fill="#080f1e"/>
+      <text x="17" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" font-weight="800" fill="white" letter-spacing="-0.5">QR</text>
+    </svg>
+    <div>
+      <div class="header-title">Quantum <span>Inventory</span></div>
+      <div class="header-sub" id="header-sub">Property Inspection Tool</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a class="header-btn" id="feed-link" href="#" title="Back to Feed"><i class="fa-solid fa-house" style="font-size:12px;"></i></a>
+    <button class="header-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme"><i class="fa-solid fa-moon" style="font-size:12px;" id="theme-icon"></i></button>
+    <button class="header-btn" onclick="toggleNav()" id="nav-toggle-btn"><i class="fa-solid fa-bars" style="font-size:12px;"></i></button>
+  </div>
+</header>
+
+<div id="nav-overlay" onclick="closeNav()" style="display:none;"></div>
+<div id="nav-drawer" style="display:none;">
+  <div style="background:#080f1e;padding:18px 16px 14px;border-bottom:1px solid rgba(99,102,241,0.2);">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <svg width="26" height="26" viewBox="0 0 34 34" fill="none"><defs><linearGradient id="nr" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#a855f7"/><stop offset="50%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><circle cx="17" cy="17" r="16" stroke="url(#nr)" stroke-width="2.5" fill="#080f1e"/><text x="17" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" font-weight="800" fill="white" letter-spacing="-0.5">QR</text></svg>
+        <div style="font-size:13px;font-weight:700;color:#fff;">Quantum <span style="color:#6366f1;">Inventory</span></div>
+      </div>
+      <button onclick="closeNav()" style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-times" style="font-size:11px;"></i></button>
+    </div>
+  </div>
+  <div style="padding:8px 0;flex:1;">
+    <button class="nav-item" onclick="closeNav();showScreen('home');loadRecent();"><i class="fa-solid fa-clipboard-list nav-icon"></i>Inspections</button>
+    <button class="nav-item" onclick="closeNav();showPropertiesScreen();"><i class="fa-solid fa-building nav-icon"></i>Properties</button>
+    <button class="nav-item" onclick="closeNav();showComplianceTracker();"><i class="fa-solid fa-shield-halved nav-icon"></i>Compliance</button>
+    <div style="height:1px;background:rgba(99,102,241,0.15);margin:6px 16px;"></div>
+    <button class="nav-item" onclick="closeNav();showSettingsScreen();"><i class="fa-solid fa-gear nav-icon"></i>Settings</button>
+  </div>
+  <div style="padding:14px 16px;border-top:1px solid rgba(99,102,241,0.1);">
+    <div style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;">QReach - Quantum Inventory v2</div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- HOME SCREEN -->
+  <div id="screen-home" class="screen active">
+    <!-- DASHBOARD HERO -->
+    <div style="background:var(--navy);margin:-16px -16px 0;padding:16px 16px 20px;border-bottom:1px solid rgba(99,102,241,0.2);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4);margin-bottom:2px;">Right Homes Bedford</div>
+      <div style="font-size:20px;font-weight:800;color:#fff;">Property Overview</div>
+    </div>
+
+    <!-- METRICS ROW -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;">
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(8,15,30,0.08);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Properties</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text);line-height:1;" id="dash-prop-count">--</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Managed</div>
+      </div>
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(8,15,30,0.08);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Inspections</div>
+        <div style="font-size:28px;font-weight:800;color:#6366f1;line-height:1;" id="dash-inv-count">--</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Total</div>
+      </div>
+      <div style="background:var(--panel);border:1.5px solid rgba(239,68,68,0.3);border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(8,15,30,0.08);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Compliance</div>
+        <div style="font-size:28px;font-weight:800;color:#ef4444;line-height:1;" id="dash-comp-urgent">--</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Urgent</div>
+      </div>
+      <div style="background:var(--panel);border:1.5px solid rgba(16,185,129,0.3);border-radius:14px;padding:14px;box-shadow:0 2px 8px rgba(8,15,30,0.08);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">This Month</div>
+        <div style="font-size:28px;font-weight:800;color:#10b981;line-height:1;" id="dash-this-month">--</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Inspections</div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;">New Inspection</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div onclick="startNew('check_in')" style="background:rgba(16,185,129,0.08);border:1.5px solid rgba(16,185,129,0.3);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:all 0.15s;" ontouchstart="this.style.opacity=0.7" ontouchend="this.style.opacity=1">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><i class="fa-solid fa-door-open" style="font-size:18px;color:#10b981;"></i></div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">Check In</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">New tenancy</div>
+      </div>
+      <div onclick="startNew('check_out')" style="background:rgba(245,158,11,0.08);border:1.5px solid rgba(245,158,11,0.3);border-radius:14px;padding:16px;cursor:pointer;text-align:center;transition:all 0.15s;" ontouchstart="this.style.opacity=0.7" ontouchend="this.style.opacity=1">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(245,158,11,0.15);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><i class="fa-solid fa-door-closed" style="font-size:18px;color:#f59e0b;"></i></div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);">Check Out</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">End of tenancy</div>
+      </div>
+    </div>
+
+    <!-- QUICK NAV -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;">Quick Access</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+      <div onclick="showPropertiesScreen()" style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;" ontouchstart="this.style.opacity=0.7" ontouchend="this.style.opacity=1">
+        <i class="fa-solid fa-building" style="font-size:20px;color:#6366f1;display:block;margin-bottom:6px;"></i>
+        <div style="font-size:11px;font-weight:700;color:var(--text);">Properties</div>
+      </div>
+      <div onclick="showComplianceTracker()" style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;" ontouchstart="this.style.opacity=0.7" ontouchend="this.style.opacity=1">
+        <i class="fa-solid fa-shield-halved" style="font-size:20px;color:#ef4444;display:block;margin-bottom:6px;"></i>
+        <div style="font-size:11px;font-weight:700;color:var(--text);">Compliance</div>
+      </div>
+      <div onclick="showSettingsScreen()" style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:14px 8px;cursor:pointer;text-align:center;" ontouchstart="this.style.opacity=0.7" ontouchend="this.style.opacity=1">
+        <i class="fa-solid fa-gear" style="font-size:20px;color:var(--muted);display:block;margin-bottom:6px;"></i>
+        <div style="font-size:11px;font-weight:700;color:var(--text);">Settings</div>
+      </div>
+    </div>
+
+    <!-- Grading reference card -->
+    <div class="grade-ref">
+      <div class="grade-ref-toggle" onclick="toggleGradeRef()">
+        <span><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Grading Guide</span>
+        <i class="fa-solid fa-chevron-down" id="grade-chevron" style="font-size:10px;transition:transform 0.2s;"></i>
+      </div>
+      <div class="grade-ref-body" id="grade-ref-body">
+        <div class="grade-row"><div class="grade-dot" style="background:#059669;"></div><div><strong>Excellent</strong> - Nothing needs doing</div></div>
+        <div class="grade-row"><div class="grade-dot" style="background:#6366f1;"></div><div><strong>Good</strong> - Acceptable, may need some work soon</div></div>
+        <div class="grade-row"><div class="grade-dot" style="background:#ef4444;"></div><div><strong>Poor</strong> - Work needed immediately</div></div>
+        <div class="grade-row"><div class="grade-dot" style="background:#94a3b8;"></div><div><strong>N/A</strong> - Not applicable</div></div>
+      </div>
+    </div>
+
+    <div class="section-heading">Recent Inspections</div>
+    <div id="recent-list">
+      <div class="empty-state"><i class="fa-solid fa-clipboard-list"></i><div class="empty-state-text">No inspections yet</div></div>
+    </div>
+  </div>
+
+  <!-- SETUP SCREEN -->
+  <div id="screen-setup" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);">New Inspection</div>
+        <div id="setup-type-label" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+      </div>
+    </div>
+
+    <label class="form-label">Property Type</label>
+    <select id="setup-prop-type" class="form-input" onchange="onPropTypeChange()">
+      <option value="terraced">Terraced</option>
+      <option value="semi">Semi-detached</option>
+      <option value="detached">Detached</option>
+      <option value="flat">Flat / Apartment</option>
+      <option value="bungalow">Bungalow</option>
+      <option value="hmo">HMO</option>
+      <option value="studio">Studio</option>
+    </select>
+
+    <label class="form-label">Number of Bedrooms</label>
+    <select id="setup-bedrooms" class="form-input">
+      <option value="1">1 Bedroom</option>
+      <option value="2">2 Bedrooms</option>
+      <option value="3">3 Bedrooms</option>
+      <option value="4">4 Bedrooms</option>
+      <option value="5">5+ Bedrooms</option>
+    </select>
+
+    <label class="form-label">Property Address</label>
+    <input id="setup-address" class="form-input" type="text" placeholder="e.g. 12 High Street, Bedford">
+    <label class="form-label">Postcode</label>
+    <input id="setup-postcode" class="form-input" type="text" placeholder="e.g. MK40 1AA">
+    <label class="form-label">Inspector Name</label>
+    <input id="setup-agent" class="form-input" type="text" placeholder="Your name">
+    <label class="form-label">Additional Notes</label>
+    <textarea id="setup-notes" class="form-input" rows="3" placeholder="Any notes before you start..."></textarea>
+
+    <div id="checkin-link-section" class="hidden">
+      <label class="form-label">Link to Check In Report</label>
+      <select id="setup-checkin-link" class="form-input">
+        <option value="">Select check in report...</option>
+      </select>
+    </div>
+
+    <button class="primary-btn" onclick="startInspection()"><i class="fa-solid fa-play"></i> Start Inspection</button>
+    <button class="secondary-btn" onclick="goHome()">Cancel</button>
+  </div>
+
+  <!-- COMPLIANCE HUB SCREEN -->
+  <div id="screen-compliance" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);">Compliance Hub</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="comp-addr-label"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 12px;margin-bottom:16px;">Complete this section before inspecting rooms. Tap any camera icon to add a photo.</div>
+
+    <!-- METER READINGS -->
+    <div class="comp-card">
+      <div class="comp-title"><i class="fa-solid fa-gauge" style="color:var(--indigo);"></i> Meter Readings</div>
+      <label class="form-label">Gas Meter Reading</label>
+      <div class="comp-row">
+        <input id="gas-reading" class="form-input" type="text" placeholder="e.g. 01234">
+        <div class="comp-row photo-trigger" id="gas-photo-btn" onclick="triggerCompPhoto('gas')"><i class="fa-solid fa-camera"></i></div>
+      </div>
+      <label class="form-label">Electric Meter Reading</label>
+      <div class="comp-row">
+        <input id="elec-reading" class="form-input" type="text" placeholder="e.g. 56789">
+        <div class="comp-row photo-trigger" id="elec-photo-btn" onclick="triggerCompPhoto('elec')"><i class="fa-solid fa-camera"></i></div>
+      </div>
+      <label class="form-label">Water Meter Reading</label>
+      <div class="comp-row">
+        <input id="water-reading" class="form-input" type="text" placeholder="e.g. 00123">
+        <div class="comp-row photo-trigger" id="water-photo-btn" onclick="triggerCompPhoto('water')"><i class="fa-solid fa-camera"></i></div>
+      </div>
+    </div>
+
+    <!-- UTILITY SUPPLIERS -->
+    <div class="comp-card">
+      <div class="comp-title"><i class="fa-solid fa-bolt" style="color:var(--amber);"></i> Utility Suppliers</div>
+      <label class="form-label">Gas Supplier</label>
+      <input id="gas-supplier" class="form-input" type="text" placeholder="e.g. British Gas">
+      <label class="form-label">Electric Supplier</label>
+      <input id="elec-supplier" class="form-input" type="text" placeholder="e.g. EDF Energy">
+      <label class="form-label">Water Supplier</label>
+      <input id="water-supplier" class="form-input" type="text" placeholder="e.g. Anglian Water">
+    </div>
+
+    <!-- SAFETY CHECKS -->
+    <div class="comp-card">
+      <div class="comp-title"><i class="fa-solid fa-shield-halved" style="color:var(--emerald);"></i> Safety Checks</div>
+      <div class="toggle-row">
+        <div class="toggle-label">Smoke Alarm</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="toggle-btns">
+            <button class="toggle-btn" id="smoke-yes" onclick="setToggle('smoke',true)">Tested</button>
+            <button class="toggle-btn" id="smoke-no" onclick="setToggle('smoke',false)">Not Tested</button>
+          </div>
+          <div class="photo-trigger" id="smoke-photo-btn" onclick="triggerCompPhoto('smoke')" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border-strong);background:var(--panel-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:13px;flex-shrink:0;"><i class="fa-solid fa-camera"></i></div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label">CO Alarm</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="toggle-btns">
+            <button class="toggle-btn" id="co-yes" onclick="setToggle('co',true)">Tested</button>
+            <button class="toggle-btn" id="co-no" onclick="setToggle('co',false)">Not Tested</button>
+          </div>
+          <div class="photo-trigger" id="co-photo-btn" onclick="triggerCompPhoto('co')" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border-strong);background:var(--panel-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:13px;flex-shrink:0;"><i class="fa-solid fa-camera"></i></div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label">Heat Sensor (Kitchen)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="toggle-btns">
+            <button class="toggle-btn" id="heat-yes" onclick="setToggle('heat',true)">Tested</button>
+            <button class="toggle-btn" id="heat-no" onclick="setToggle('heat',false)">Not Tested</button>
+          </div>
+          <div class="photo-trigger" id="heat-photo-btn" onclick="triggerCompPhoto('heat')" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border-strong);background:var(--panel-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:13px;flex-shrink:0;"><i class="fa-solid fa-camera"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KEYS AND SECURITY -->
+    <div class="comp-card">
+      <div class="comp-title"><i class="fa-solid fa-key" style="color:var(--amber);"></i> Keys and Security</div>
+      <label class="form-label">Number of Keys Handed to Tenant</label>
+      <div class="comp-row">
+        <input id="keys-count" class="form-input" type="number" placeholder="e.g. 2" min="0" max="99">
+        <div class="comp-row photo-trigger" id="keys-photo-btn" onclick="triggerCompPhoto('keys')"><i class="fa-solid fa-camera"></i></div>
+      </div>
+      <div class="toggle-row" style="margin-top:4px;">
+        <div class="toggle-label">Property Alarm</div>
+        <div class="toggle-btns">
+          <button class="toggle-btn" id="alarm-yes" onclick="setToggle('alarm',true)">Yes</button>
+          <button class="toggle-btn" id="alarm-no" onclick="setToggle('alarm',false)">No</button>
+        </div>
+      </div>
+      <div id="alarm-code-section" class="hidden" style="margin-top:10px;">
+        <label class="form-label">Alarm Code</label>
+        <div class="comp-row">
+          <input id="alarm-code" class="form-input" type="text" placeholder="Enter code">
+          <div class="comp-row photo-trigger" id="alarm-photo-btn" onclick="triggerCompPhoto('alarm')"><i class="fa-solid fa-camera"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHITE GOODS -->
+    <div class="comp-card">
+      <div class="comp-title"><i class="fa-solid fa-washing-machine" style="color:var(--indigo);"></i> White Goods</div>
+      <div id="wg-list"></div>
+      <div class="add-wg-row" style="margin-top:8px;">
+        <input id="wg-input" type="text" placeholder="Appliance name e.g. Fridge">
+        <button class="add-wg-btn" onclick="addWhiteGood()"><i class="fa-solid fa-plus"></i> Add</button>
+      </div>
+    </div>
+
+    <button class="primary-btn" onclick="proceedToRooms()"><i class="fa-solid fa-arrow-right"></i> Continue to Rooms</button>
+    <button class="secondary-btn" onclick="goHome()">Cancel</button>
+  </div>
+
+  <!-- ROOMS SCREEN -->
+  <div id="screen-rooms" class="screen">
+    <div class="room-progress">
+      <div class="room-progress-row">
+        <div class="room-progress-text" id="rooms-progress-text">0 of 0 rooms completed</div>
+        <button onclick="goToSummary()" style="background:linear-gradient(135deg,#6366f1,#1d4ed8);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;">Review</button>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="rooms-progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div id="room-list"></div>
+
+    <button class="secondary-btn" onclick="addCustomRoom()" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;">
+      <i class="fa-solid fa-plus"></i> Add Custom Room
+    </button>
+  </div>
+
+  <!-- ROOM DETAIL SCREEN -->
+  <div id="screen-room-detail" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button class="back-btn" onclick="backToRooms()"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);" id="room-detail-name">Room</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="room-detail-addr"></div>
+      </div>
+    </div>
+
+    <!-- Overall room condition -->
+    <div class="section-heading">Overall Room Condition</div>
+    <div class="condition-grid">
+      <button class="cond-btn" onclick="setCondition('Excellent')" id="cond-excellent">Excellent</button>
+      <button class="cond-btn" onclick="setCondition('Good')" id="cond-good">Good</button>
+      <button class="cond-btn" onclick="setCondition('Poor')" id="cond-poor">Poor</button>
+      <button class="cond-btn" onclick="setCondition('N/A')" id="cond-na">N/A</button>
+    </div>
+
+    <!-- Room items -->
+    <div id="room-items-section"></div>
+
+    <!-- Room photos -->
+    <div class="section-heading">Photos</div>
+    <div class="photos-grid" id="photos-grid">
+      <label class="add-photo-btn" for="photo-input">
+        <i class="fa-solid fa-camera"></i>
+        <span>Add Photo</span>
+      </label>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" multiple class="hidden" onchange="handlePhotos(event)">
+
+    <!-- Room notes -->
+    <div class="section-heading">Notes</div>
+    <textarea id="room-notes" class="form-input" rows="3" placeholder="Overall notes, damage, defects..."></textarea>
+
+    <button class="primary-btn" onclick="saveRoom()"><i class="fa-solid fa-check"></i> Save Room</button>
+  </div>
+
+  <!-- SIGNATURE SCREEN -->
+  <div id="screen-signatures" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button class="back-btn" onclick="goToSummary()"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--text);">Signatures</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="sig-addr-label"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 12px;margin-bottom:16px;">Sign below to confirm the inspection. Draw your signature with your finger.</div>
+
+    <label class="form-label">Agent Name</label>
+    <input id="sig-agent-name" class="form-input" type="text" placeholder="Agent full name">
+    <div class="section-heading">Agent Signature</div>
+    <canvas id="sig-agent" class="sig-canvas"></canvas>
+    <button class="sig-clear" onclick="clearSig('sig-agent')"><i class="fa-solid fa-rotate-left"></i> Clear signature</button>
+
+    <label class="form-label" style="margin-top:16px;">Tenant Name</label>
+    <input id="sig-tenant-name" class="form-input" type="text" placeholder="Tenant full name">
+    <div class="section-heading">Tenant Signature</div>
+    <canvas id="sig-tenant" class="sig-canvas"></canvas>
+    <button class="sig-clear" onclick="clearSig('sig-tenant')"><i class="fa-solid fa-rotate-left"></i> Clear signature</button>
+
+    <div style="font-size:11px;color:var(--muted);margin:12px 0 4px;">Date: <strong id="sig-date"></strong></div>
+
+    <button class="primary-btn" style="margin-top:12px;" onclick="saveSignaturesAndComplete()"><i class="fa-solid fa-file-signature"></i> Sign and Complete Inspection</button>
+    <button class="secondary-btn" onclick="goToSummary()">Back to Summary</button>
+  </div>
+
+  <!-- SUMMARY SCREEN -->
+  <div id="screen-summary" class="screen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:var(--text);">Inspection Summary</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="summary-meta"></div>
+      </div>
+      <button class="back-btn" onclick="backToRooms()"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+    </div>
+
+    <div id="summary-rooms"></div>
+
+    <button class="pdf-btn" onclick="generatePDF()"><i class="fa-solid fa-file-pdf"></i> Generate PDF Report</button>
+    <button class="primary-btn" onclick="showScreen('signatures');initSigPads();document.getElementById('sig-addr-label').innerText=currentInventory?.property_address||'';document.getElementById('sig-agent-name').value=currentInventory?.agent_name||'';document.getElementById('sig-date').innerText=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});" style="background:var(--emerald);margin-bottom:10px;"><i class="fa-solid fa-file-signature"></i> Sign and Complete</button>
+    <button class="secondary-btn" onclick="backToRooms()">Back to Rooms</button>
+  </div>
+
+
+  <!-- PROPERTIES SCREEN -->
+  <div id="screen-properties" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <button onclick="showScreen('home')" style="width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#6366f1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div><div style="font-size:16px;font-weight:800;color:var(--text);">Properties</div><div style="font-size:11px;color:var(--muted);" id="prop-count-label">Loading...</div></div>
+    </div>
+    <div style="position:relative;margin-bottom:14px;">
+      <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted-2);"></i>
+      <input id="prop-search" type="text" placeholder="Search address, postcode, landlord..." oninput="filterProperties(this.value)" style="width:100%;background:var(--panel-2);border:1.5px solid var(--border-strong);border-radius:12px;padding:11px 12px 11px 34px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;outline:none;">
+    </div>
+    <div id="properties-list"></div>
+  </div>
+
+  <!-- PROPERTY DETAIL SCREEN -->
+  <div id="screen-property-detail" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <button onclick="showPropertiesScreen()" style="width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#6366f1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:15px;font-weight:800;color:var(--text);" id="pd-address"></div>
+        <div style="font-size:11px;color:var(--muted);font-family:monospace;" id="pd-postcode"></div>
+      </div>
+      <button onclick="editPropertyModal()" style="padding:7px 14px;border-radius:9px;border:1.5px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#6366f1;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Edit</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Landlord</div><div style="font-size:13px;font-weight:600;color:var(--text);" id="pd-landlord">Not set</div></div>
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Tenant</div><div style="font-size:13px;font-weight:600;color:var(--text);" id="pd-tenant">Not set</div></div>
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Type</div><div style="font-size:13px;font-weight:600;color:var(--text);" id="pd-type">Not set</div></div>
+      <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Tenancy End</div><div style="font-size:13px;font-weight:600;color:var(--text);" id="pd-end">Not set</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px;">Inspections</div>
+    <div id="pd-inventories"></div>
+    <button onclick="startFromProperty()" class="primary-btn" style="margin-top:16px;"><i class="fa-solid fa-plus"></i> New Inspection</button>
+  </div>
+
+  <!-- COMPLIANCE TRACKER SCREEN -->
+  <div id="screen-compliance-tracker" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <button onclick="showScreen('home')" style="width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#6366f1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div><div style="font-size:16px;font-weight:800;color:var(--text);">Compliance</div><div style="font-size:11px;color:var(--muted);">Certificate deadlines</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;">
+      <div style="flex-shrink:0;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:6px;"><span style="font-size:9px;font-weight:700;text-transform:uppercase;color:#ef4444;">Expired</span><span style="font-size:16px;font-weight:800;color:#ef4444;" id="comp-red">0</span></div>
+      <div style="flex-shrink:0;background:rgba(245,158,11,0.1);border:1.5px solid rgba(245,158,11,0.3);border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:6px;"><span style="font-size:9px;font-weight:700;text-transform:uppercase;color:#f59e0b;">Due Soon</span><span style="font-size:16px;font-weight:800;color:#f59e0b;" id="comp-amber">0</span></div>
+      <div style="flex-shrink:0;background:rgba(16,185,129,0.1);border:1.5px solid rgba(16,185,129,0.3);border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:6px;"><span style="font-size:9px;font-weight:700;text-transform:uppercase;color:#10b981;">Valid</span><span style="font-size:16px;font-weight:800;color:#10b981;" id="comp-green">0</span></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button onclick="setCompFilter('all')" id="cf-all" style="padding:6px 14px;border-radius:20px;border:1.5px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.15);color:#6366f1;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">All</button>
+      <button onclick="setCompFilter('gas')" id="cf-gas" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-strong);background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Gas</button>
+      <button onclick="setCompFilter('epc')" id="cf-epc" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-strong);background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">EPC</button>
+      <button onclick="setCompFilter('eicr')" id="cf-eicr" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-strong);background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">EICR</button>
+      <button onclick="setCompFilter('pat')" id="cf-pat" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-strong);background:var(--panel-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">PAT</button>
+    </div>
+    <div id="compliance-list"></div>
+    <button onclick="showAddCompModal()" class="primary-btn" style="margin-top:8px;"><i class="fa-solid fa-plus"></i> Add Certificate</button>
+  </div>
+
+  <!-- SETTINGS SCREEN -->
+  <div id="screen-settings" class="screen">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <button onclick="showScreen('home')" style="width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(99,102,241,0.3);background:rgba(99,102,241,0.08);color:#6366f1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-arrow-left" style="font-size:12px;"></i></button>
+      <div><div style="font-size:16px;font-weight:800;color:var(--text);">Settings</div><div style="font-size:11px;color:var(--muted);">Quantum Inventory</div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Profile</div>
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Agency Name</div>
+        <input id="s-agency" class="form-input" type="text" style="margin-bottom:0;" value="Right Homes Bedford">
+      </div>
+      <div style="padding:14px 16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Your Name</div>
+        <input id="s-agent" class="form-input" type="text" style="margin-bottom:0;" placeholder="Your name">
+      </div>
+    </div>
+
+    <!-- REPORT DEFAULTS -->
+    <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Report Defaults</div>
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Default Property Type</div>
+        <select id="s-default-type" class="form-input" style="margin-bottom:0;">
+          <option value="terraced">Terraced</option>
+          <option value="semi">Semi-detached</option>
+          <option value="detached">Detached</option>
+          <option value="flat">Flat / Apartment</option>
+          <option value="bungalow">Bungalow</option>
+          <option value="hmo">HMO</option>
+          <option value="studio">Studio</option>
+        </select>
+      </div>
+      <div style="padding:14px 16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Report Footer Text</div>
+        <input id="s-footer" class="form-input" type="text" style="margin-bottom:0;" placeholder="e.g. Right Homes Bedford - 01234 567890">
+      </div>
+    </div>
+
+    <!-- COMPLIANCE ALERTS -->
+    <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Compliance Alerts</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">Red alert threshold</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Days before expiry to show red</div></div>
+        <select id="s-red-days" class="form-input" style="margin-bottom:0;width:80px;">
+          <option value="30">30</option>
+          <option value="60">60</option>
+          <option value="90">90</option>
+        </select>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">Amber alert threshold</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Days before expiry to show amber</div></div>
+        <select id="s-amber-days" class="form-input" style="margin-bottom:0;width:80px;">
+          <option value="60">60</option>
+          <option value="90">90</option>
+          <option value="120">120</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SOUND AND TOUCH -->
+    <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Sound and Touch</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">Sound Effects</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Tones on tap, save, complete</div></div>
+        <span id="sfx-state" onclick="toggleSfx()" style="font-size:12px;font-weight:700;cursor:pointer;color:#10b981;">On</span>
+      </div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">Haptic Feedback</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Vibrate on touch</div></div>
+        <span id="vib-state" onclick="toggleVib()" style="font-size:12px;font-weight:700;cursor:pointer;color:#10b981;">On</span>
+      </div>
+    </div>
+
+    <!-- DATA -->
+    <div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 16px;background:var(--panel-2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Data</div>
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">Supabase - qreach</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">Live connection</div></div>
+        <span style="font-size:9px;font-weight:700;background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:5px;padding:3px 8px;">LIVE</span>
+      </div>
+    </div>
+
+    <button onclick="saveSettings()" class="primary-btn"><i class="fa-solid fa-check"></i> Save Settings</button>
+  </div>
+
+
+</div>
+<!-- CUSTOM ROOM MODAL -->
+<div id="custom-room-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:14px;">Add Custom Room</div>
+    <label class="form-label">Room Name</label>
+    <input id="custom-room-input" class="form-input" type="text" placeholder="e.g. Utility Room, Garage...">
+    <button class="primary-btn" onclick="confirmCustomRoom()"><i class="fa-solid fa-plus"></i> Add Room</button>
+    <button class="secondary-btn" onclick="document.getElementById('custom-room-modal').classList.add('hidden')">Cancel</button>
+  </div>
+</div>
+
+<!-- HIDDEN COMP PHOTO INPUT -->
+<input type="file" id="comp-photo-input" accept="image/*" capture="environment" class="hidden" onchange="handleCompPhoto(event)">
+
+<div id="toast"></div>
+
+<script>
+// ---- SUPABASE ----
+const SUPABASE_URL  = 'https://ktmhidiotfbpejliwvsh.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0bWhpZGlvdGZicGVqbGl3dnNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODgxNTUsImV4cCI6MjA5NDk2NDE1NX0.FBF6_Gi51-AZdhug7aZF3jFprhaBO4ApO1wHyoeBlPQ';
+const SUPABASE_SVC  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0bWhpZGlvdGZicGVqbGl3dnNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM4ODE1NSwiZXhwIjoyMDk0OTY0MTU1fQ.JVaJz4Cl_T264IKfqaUduKefcCV1xbv7r_xcJEtNHsw';
+const SCHEMA = 'qreach';
+const sbRead  = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {db:{schema:SCHEMA},global:{headers:{'Accept-Profile':SCHEMA,'Content-Profile':SCHEMA}},auth:{storageKey:'qi-read-auth',persistSession:false,autoRefreshToken:false}});
+const sbWrite = supabase.createClient(SUPABASE_URL, SUPABASE_SVC,  {db:{schema:SCHEMA},global:{headers:{'Accept-Profile':SCHEMA,'Content-Profile':SCHEMA}},auth:{storageKey:'qi-write-auth',persistSession:false,autoRefreshToken:false}});
+
+// ---- ROOM TEMPLATES ----
+const ROOM_ITEMS = {
+  base: ['Walls','Ceiling','Flooring','Light Fittings','Switches','Windows','Doors','Radiators'],
+  living: ['Carpet','Skirting'],
+  kitchen: ['Cooker','Boiler','Sink and Taps','White Goods'],
+  bathroom: ['Sink and Taps','Locks','Bath','Shower'],
+  garden: ['Lawn','Fencing','Decking','Paving'],
+  stairway: ['Railing','Carpet','Steps','Walls'],
+};
+
+function getRoomItems(roomName) {
+  const n = roomName.toLowerCase();
+  let items = [...ROOM_ITEMS.base];
+  if (n.includes('living') || n.includes('lounge')) items = [...items, ...ROOM_ITEMS.living];
+  if (n.includes('kitchen')) items = [...items, ...ROOM_ITEMS.kitchen];
+  if (n.includes('bath') || n.includes('ensuite') || n.includes('en-suite') || n.includes('wc') || n.includes('toilet')) items = [...items, ...ROOM_ITEMS.bathroom];
+  if (n.includes('garden') || n.includes('exterior') || n.includes('outdoor')) items = [...items, ...ROOM_ITEMS.garden];
+  if (n.includes('stair') || n.includes('landing')) items = [...items, ...ROOM_ITEMS.stairway];
+  // Remove base 'Walls' if stairway already adds 'Walls'
+  return [...new Set(items)];
+}
+
+function getDefaultRooms(propType, bedrooms) {
+  const b = parseInt(bedrooms) || 2;
+  let rooms = [];
+  if (propType !== 'studio') {
+    rooms.push({name:'Entrance / Hall', icon:'fa-door-open'});
+  }
+  if (propType !== 'studio') {
+    rooms.push({name:'Living Room', icon:'fa-couch'});
+  }
+  rooms.push({name:'Kitchen', icon:'fa-utensils'});
+  if (propType === 'studio') {
+    rooms.push({name:'Open Plan Living / Kitchen', icon:'fa-house'});
+  }
+  for (let i = 1; i <= b; i++) {
+    rooms.push({name:'Bedroom ' + i, icon:'fa-bed'});
+  }
+  rooms.push({name:'Bathroom', icon:'fa-bath'});
+  if (propType !== 'bungalow' && propType !== 'flat' && propType !== 'studio') {
+    rooms.push({name:'Stairway / Landing', icon:'fa-stairs'});
+  }
+  if (propType === 'detached' || propType === 'semi' || propType === 'terraced' || propType === 'bungalow') {
+    rooms.push({name:'Garden / Exterior', icon:'fa-tree'});
+  }
+  return rooms;
+}
+
+// ---- STATE ----
+let currentType = null;
+let currentInventoryId = null;
+let currentInventory = null;
+let currentRooms = [];
+let currentRoomIndex = null;
+let roomPhotos = {};
+let roomConditions = {};
+let roomNotes = {};
+let roomItemGrades = {};
+let roomItemNotes = {};
+
+// Compliance state
+let compPhotos = {};
+let compToggles = {};
+let whiteGoods = [];
+let currentCompPhotoKey = null;
+
+// Sig pads
+let sigPads = {};
+
+// ---- SCREENS ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goHome() {
+  showScreen('home');
+  document.getElementById('header-sub').innerText = 'Property Inspection Tool';
+  loadDashboard();
+  loadRecent();
+}
+
+// ---- GRADE REF ----
+function toggleGradeRef() {
+  const body = document.getElementById('grade-ref-body');
+  const chev = document.getElementById('grade-chevron');
+  body.classList.toggle('open');
+  chev.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+}
+
+// ---- HOME ----
+async function loadDashboard() {
+  try {
+    const [propRes, invRes, compRes] = await Promise.all([
+      sbRead.from('properties').select('id', {count:'exact', head:true}),
+      sbRead.from('inventories').select('id', {count:'exact', head:true}),
+      sbRead.from('compliance').select('expiry_date')
+    ]);
+    var pc = document.getElementById('dash-prop-count');
+    var ic = document.getElementById('dash-inv-count');
+    var cu = document.getElementById('dash-comp-urgent');
+    var tm = document.getElementById('dash-this-month');
+    if(pc) pc.innerText = propRes.count || 0;
+    if(ic) ic.innerText = invRes.count || 0;
+    if(cu) {
+      var urgent = (compRes.data||[]).filter(function(c){ var d=Math.floor((new Date(c.expiry_date)-new Date())/86400000); return d<30; }).length;
+      cu.innerText = urgent;
+    }
+    // This month inspections
+    var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    var monthRes = await sbRead.from('inventories').select('id', {count:'exact', head:true}).gte('created_at', monthStart.toISOString());
+    if(tm) tm.innerText = monthRes.count || 0;
+  } catch(e) { console.log('Dashboard load error:', e); }
+}
+
+async function loadRecent() {
+  const list = document.getElementById('recent-list');
+  let data;
+  try {
+    const res = await sbRead.from('inventories').select('*').order('created_at',{ascending:false}).limit(10);
+    data = res.data;
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-clipboard-list"></i><div class="empty-state-text">No inspections yet</div></div>';
+    return;
+  }
+  if (!data || !data.length) {
+    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-clipboard-list"></i><div class="empty-state-text">No inspections yet</div></div>';
+    return;
+  }
+  list.innerHTML = data.map(inv => `
+    <div class="recent-card" onclick="openInventory('${inv.id}')">
+      <div>
+        <div class="recent-addr">${_esc(inv.property_address)}</div>
+        <div class="recent-meta">${new Date(inv.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})} - ${_esc(inv.agent_name||'')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge badge-${inv.type==='check_in'?'in':'out'}">${inv.type==='check_in'?'Check In':'Check Out'}</span>
+        ${inv.status==='complete'?'<span class="badge badge-done">Done</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+// ---- SETUP ----
+function onPropTypeChange() {
+  // No action needed here - just recalculates rooms on start
+}
+
+function startNew(type) {
+  currentType = type;
+  roomPhotos = {}; roomConditions = {}; roomNotes = {};
+  roomItemGrades = {}; roomItemNotes = {};
+  compPhotos = {}; compToggles = {}; whiteGoods = [];
+  currentInventoryId = null; currentInventory = null;
+  currentRoomIndex = null;
+
+  document.getElementById('setup-type-label').innerText = type === 'check_in' ? 'Check In - Record property condition' : 'Check Out - End of tenancy';
+  document.getElementById('setup-address').value = '';
+  document.getElementById('setup-postcode').value = '';
+  document.getElementById('setup-agent').value = localStorage.getItem('qi_agent_name') || '';
+  document.getElementById('setup-notes').value = '';
+
+  const linkSection = document.getElementById('checkin-link-section');
+  if (type === 'check_out') {
+    linkSection.classList.remove('hidden');
+    loadCheckInReports();
+  } else {
+    linkSection.classList.add('hidden');
+  }
+
+  showScreen('setup');
+}
+
+async function loadCheckInReports() {
+  const {data} = await sbRead.from('inventories').select('id,property_address,created_at').eq('type','check_in').order('created_at',{ascending:false});
+  const sel = document.getElementById('setup-checkin-link');
+  sel.innerHTML = '<option value="">Select check in report...</option>';
+  if (data) data.forEach(inv => {
+    const opt = document.createElement('option');
+    opt.value = inv.id;
+    opt.text = inv.property_address + ' - ' + new Date(inv.created_at).toLocaleDateString('en-GB');
+    sel.appendChild(opt);
+  });
+}
+
+async function startInspection() {
+  const address = document.getElementById('setup-address').value.trim();
+  const postcode = document.getElementById('setup-postcode').value.trim();
+  const agent = document.getElementById('setup-agent').value.trim();
+  const notes = document.getElementById('setup-notes').value.trim();
+  const propType = document.getElementById('setup-prop-type').value;
+  const bedrooms = document.getElementById('setup-bedrooms').value;
+
+  if (!address) { showToast('Enter property address'); return; }
+  if (!agent) { showToast('Enter your name'); return; }
+
+  localStorage.setItem('qi_agent_name', agent);
+
+  const checkInId = currentType === 'check_out' ? (document.getElementById('setup-checkin-link').value || null) : null;
+
+  const {data, error} = await sbWrite.from('inventories').insert([{
+    property_address: address,
+    postcode: postcode,
+    type: currentType,
+    agent_name: agent,
+    notes: notes,
+    status: 'in_progress',
+    check_in_id: checkInId
+  }]).select().single();
+
+  if (error) { console.error(error); showToast('Could not start inspection'); return; }
+
+  currentInventoryId = data.id;
+  currentInventory = data;
+  currentRooms = getDefaultRooms(propType, bedrooms).map((r,i) => ({...r, index:i}));
+
+  document.getElementById('header-sub').innerText = address;
+  document.getElementById('comp-addr-label').innerText = address;
+
+  // Reset compliance UI
+  resetComplianceUI();
+  showScreen('compliance');
+}
+
+// ---- COMPLIANCE ----
+function resetComplianceUI() {
+  ['gas-reading','elec-reading','water-reading','gas-supplier','elec-supplier','water-supplier','keys-count','alarm-code'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['smoke','co','heat','alarm'].forEach(k => {
+    const y = document.getElementById(k+'-yes');
+    const n = document.getElementById(k+'-no');
+    if (y) y.className = 'toggle-btn';
+    if (n) n.className = 'toggle-btn';
+  });
+  ['gas','elec','water','smoke','co','heat','keys','alarm'].forEach(k => {
+    const btn = document.getElementById(k+'-photo-btn');
+    if (btn) btn.classList.remove('has-photo');
+  });
+  document.getElementById('alarm-code-section').classList.add('hidden');
+  document.getElementById('wg-list').innerHTML = '';
+  compPhotos = {}; compToggles = {}; whiteGoods = [];
+}
+
+function setToggle(key, val) {
+  compToggles[key] = val;
+  const yBtn = document.getElementById(key+'-yes');
+  const nBtn = document.getElementById(key+'-no');
+  if (yBtn) yBtn.className = 'toggle-btn' + (val ? ' active-yes' : '');
+  if (nBtn) nBtn.className = 'toggle-btn' + (!val ? ' active-no' : '');
+  if (key === 'alarm') {
+    document.getElementById('alarm-code-section').classList.toggle('hidden', !val);
+  }
+}
+
+function triggerCompPhoto(key) {
+  currentCompPhotoKey = key;
+  document.getElementById('comp-photo-input').click();
+}
+
+function handleCompPhoto(event) {
+  const file = event.target.files[0];
+  if (!file || !currentCompPhotoKey) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    compPhotos[currentCompPhotoKey] = e.target.result;
+    const btn = document.getElementById(currentCompPhotoKey + '-photo-btn');
+    if (btn) btn.classList.add('has-photo');
+    showToast('Photo added');
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+// White goods
+function renderWhiteGoods() {
+  const list = document.getElementById('wg-list');
+  if (!whiteGoods.length) { list.innerHTML = ''; return; }
+  list.innerHTML = whiteGoods.map((wg,i) => `
+    <div class="wg-row">
+      <div style="flex:1;">
+        <div class="wg-name">${_esc(wg.name)}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          ${['Excellent','Good','Poor','N/A'].map(c => `<button class="item-grade-btn${wg.condition===c?' active-'+c.toLowerCase().replace('/',''):''}" onclick="setWgGrade(${i},'${c}')">${c}</button>`).join('')}
+        </div>
+      </div>
+      <button class="wg-del" onclick="removeWhiteGood(${i})"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('');
+}
+
+function addWhiteGood() {
+  const input = document.getElementById('wg-input');
+  const name = input.value.trim();
+  if (!name) return;
+  whiteGoods.push({name, condition:'Good'});
+  input.value = '';
+  renderWhiteGoods();
+}
+
+function removeWhiteGood(i) {
+  whiteGoods.splice(i, 1);
+  renderWhiteGoods();
+}
+
+function setWgGrade(i, cond) {
+  whiteGoods[i].condition = cond;
+  renderWhiteGoods();
+}
+
+function proceedToRooms() {
+  renderRoomList();
+  showScreen('rooms');
+}
+
+// ---- ROOMS ----
+function renderRoomList() {
+  const done = currentRooms.filter((_,i) => roomConditions[i]).length;
+  const total = currentRooms.length;
+  document.getElementById('rooms-progress-text').innerText = `${done} of ${total} rooms completed`;
+  document.getElementById('rooms-progress-fill').style.width = total ? (done/total*100)+'%' : '0%';
+
+  document.getElementById('room-list').innerHTML = currentRooms.map((room, i) => {
+    const isDone = !!roomConditions[i];
+    const photoCount = (roomPhotos[i] || []).length;
+    const cond = roomConditions[i] || '';
+    const condColor = cond==='Excellent'?'var(--emerald)':cond==='Good'?'var(--indigo)':cond==='Poor'?'var(--red)':cond==='N/A'?'var(--muted)':'var(--muted-2)';
+    return `
+    <div class="room-card ${isDone?'done':''}" onclick="openRoom(${i})">
+      <div class="room-left">
+        <div class="room-icon"><i class="fa-solid ${room.icon||'fa-door-open'}"></i></div>
+        <div>
+          <div class="room-name">${_esc(room.name)}</div>
+          <div class="room-status" style="color:${condColor}">${cond || 'Tap to inspect'}</div>
+        </div>
+      </div>
+      <div class="room-right">
+        ${photoCount > 0 ? `<span class="photo-count"><i class="fa-solid fa-image" style="font-size:10px;"></i> ${photoCount}</span>` : ''}
+        <i class="fa-solid fa-chevron-right" style="color:var(--muted-2);font-size:11px;"></i>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openRoom(index) {
+  currentRoomIndex = index;
+  const room = currentRooms[index];
+  document.getElementById('room-detail-name').innerText = room.name;
+  document.getElementById('room-detail-addr').innerText = currentInventory?.property_address || '';
+
+  const cond = roomConditions[index] || 'Good';
+  setCondition(cond, false);
+
+  document.getElementById('room-notes').value = roomNotes[index] || '';
+  renderPhotos(index);
+  renderRoomItems(index, room.name);
+  showScreen('room-detail');
+}
+
+function renderRoomItems(index, roomName) {
+  const items = getRoomItems(roomName);
+  const section = document.getElementById('room-items-section');
+  if (!items.length) { section.innerHTML = ''; return; }
+
+  if (!roomItemGrades[index]) roomItemGrades[index] = {};
+  if (!roomItemNotes[index]) roomItemNotes[index] = {};
+
+  section.innerHTML = `
+    <div class="section-heading">Room Items</div>
+    <div class="items-section">
+      <div class="items-section-header">Grade each item</div>
+      ${items.map(item => {
+        const grade = roomItemGrades[index][item] || '';
+        return `
+        <div class="item-row" id="item-row-${_safeId(item)}">
+          <div class="item-name">${_esc(item)}</div>
+          <div class="item-grades">
+            ${['Excellent','Good','Poor','N/A'].map(c => `<button class="item-grade-btn${grade===c?' active-'+c.toLowerCase().replace('/',''):''}" onclick="setItemGrade(${index},'${_esc(item)}','${c}')">${c}</button>`).join('')}
+          </div>
+          <div class="item-notes">
+            <input type="text" placeholder="Notes (optional)" value="${_esc(roomItemNotes[index][item]||'')}" onchange="setItemNote(${index},'${_esc(item)}',this.value)">
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function _safeId(str) { return str.replace(/[^a-zA-Z0-9]/g,'-'); }
+
+function setItemGrade(index, item, grade) {
+  if (!roomItemGrades[index]) roomItemGrades[index] = {};
+  roomItemGrades[index][item] = grade;
+  renderRoomItems(index, currentRooms[index].name);
+}
+
+function setItemNote(index, item, note) {
+  if (!roomItemNotes[index]) roomItemNotes[index] = {};
+  roomItemNotes[index][item] = note;
+}
+
+function setCondition(cond, updateState=true) {
+  if (updateState && currentRoomIndex !== null) {
+    roomConditions[currentRoomIndex] = cond;
+  }
+  ['Excellent','Good','Poor','N/A'].forEach(c => {
+    const safeKey = c.toLowerCase().replace('/','');
+    const btn = document.getElementById('cond-' + safeKey);
+    if (!btn) return;
+    btn.className = 'cond-btn' + (c === cond ? ' active-' + safeKey : '');
+  });
+}
+
+function renderPhotos(index) {
+  const photos = roomPhotos[index] || [];
+  const grid = document.getElementById('photos-grid');
+  grid.innerHTML = photos.map((p,pi) => `
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}">
+      <button class="photo-thumb-del" onclick="deletePhoto(${pi})"><i class="fa-solid fa-times"></i></button>
+    </div>`).join('') +
+    `<label class="add-photo-btn" for="photo-input">
+      <i class="fa-solid fa-camera"></i>
+      <span>Add Photo</span>
+    </label>`;
+}
+
+function handlePhotos(event) {
+  sfxPhoto(); doVib([10,20,10]);
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  const index = currentRoomIndex;
+  if (!roomPhotos[index]) roomPhotos[index] = [];
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      roomPhotos[index].push({dataUrl: e.target.result, file});
+      loaded++;
+      if (loaded === files.length) { renderPhotos(index); navigator.vibrate && navigator.vibrate(15); }
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+function deletePhoto(photoIndex) {
+  roomPhotos[currentRoomIndex].splice(photoIndex, 1);
+  renderPhotos(currentRoomIndex);
+}
+
+function saveRoom() {
+  const index = currentRoomIndex;
+  if (!roomConditions[index]) roomConditions[index] = 'Good';
+  roomNotes[index] = document.getElementById('room-notes').value;
+  showToast('Room saved');
+  navigator.vibrate && navigator.vibrate(20);
+  backToRooms();
+}
+
+function backToRooms() {
+  renderRoomList();
+  showScreen('rooms');
+}
+
+// ---- CUSTOM ROOM ----
+function addCustomRoom() {
+  document.getElementById('custom-room-input').value = '';
+  document.getElementById('custom-room-modal').classList.remove('hidden');
+}
+
+function confirmCustomRoom() {
+  const name = document.getElementById('custom-room-input').value.trim();
+  if (!name) return;
+  currentRooms.push({name, icon:'fa-door-open', index: currentRooms.length});
+  document.getElementById('custom-room-modal').classList.add('hidden');
+  renderRoomList();
+}
+
+// ---- SUMMARY ----
+function goToSummary() {
+  document.getElementById('summary-meta').innerText =
+    (currentInventory?.property_address || '') + ' - ' +
+    new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  const summaryDiv = document.getElementById('summary-rooms');
+  summaryDiv.innerHTML = currentRooms.map((room, i) => {
+    const cond = roomConditions[i] || 'Not inspected';
+    const photos = roomPhotos[i] || [];
+    const notes = roomNotes[i] || '';
+    const items = roomItemGrades[i] || {};
+    const condColor = cond==='Excellent'?'var(--emerald)':cond==='Good'?'var(--indigo)':cond==='Poor'?'var(--red)':'var(--muted)';
+
+    const poorItems = Object.entries(items).filter(([,v]) => v === 'Poor').map(([k]) => k);
+
+    return `
+    <div class="summary-card">
+      <div class="summary-room-header">
+        <div class="summary-room-name">${_esc(room.name)}</div>
+        <span style="font-size:11px;font-weight:700;color:${condColor};">${cond}</span>
+      </div>
+      ${poorItems.length ? `<div style="padding:8px 14px;font-size:11px;color:var(--red);font-weight:600;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:4px;"></i>Issues: ${poorItems.map(_esc).join(', ')}</div>` : ''}
+      ${photos.length ? `<div class="summary-photos">${photos.map(p=>`<img src="${p.dataUrl}" class="summary-photo">`).join('')}</div>` : ''}
+      ${notes ? `<div class="summary-notes">${_esc(notes)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  showScreen('summary');
+}
+
+// ---- SIGNATURES ----
+function initSigPads() {
+  ['sig-agent','sig-tenant'].forEach(id => {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 160;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    let drawing = false, lx = 0, ly = 0;
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return {x: src.clientX - rect.left, y: src.clientY - rect.top};
+    }
+
+    canvas.addEventListener('mousedown', e => { drawing = true; const p = getPos(e); lx=p.x; ly=p.y; });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mousemove', e => {
+      if (!drawing) return;
+      const p = getPos(e);
+      ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke();
+      lx=p.x; ly=p.y;
+    });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); lx=p.x; ly=p.y; }, {passive:false});
+    canvas.addEventListener('touchend', e => { e.preventDefault(); drawing = false; }, {passive:false});
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!drawing) return;
+      const p = getPos(e);
+      ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke();
+      lx=p.x; ly=p.y;
+    }, {passive:false});
+
+    sigPads[id] = canvas;
+  });
+}
+
+function clearSig(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function getSigDataUrl(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  return canvas.toDataURL('image/png');
+}
+
+async function saveSignaturesAndComplete() {
+  sfxDone(); doVib([30,50,30]);
+  const agentName = document.getElementById('sig-agent-name').value.trim();
+  const tenantName = document.getElementById('sig-tenant-name').value.trim();
+  const agentSig = getSigDataUrl('sig-agent');
+  const tenantSig = getSigDataUrl('sig-tenant');
+
+  showToast('Saving inspection...');
+  await completeInspection(agentName, agentSig, tenantName, tenantSig);
+}
+
+// ---- COMPLETE ----
+async function completeInspection(agentName, agentSig, tenantName, tenantSig) {
+  try {
+    // Save rooms
+    for (let i = 0; i < currentRooms.length; i++) {
+      const room = currentRooms[i];
+      if (!roomConditions[i] && !(roomPhotos[i]||[]).length) continue;
+
+      const {data: roomData, error: roomError} = await sbWrite.from('inventory_rooms').insert([{
+        inventory_id: currentInventoryId,
+        room_name: room.name,
+        condition: roomConditions[i] || 'Not inspected',
+        notes: roomNotes[i] || '',
+        sort_order: i
+      }]).select().single();
+
+      if (roomError) { console.error(roomError); continue; }
+
+      // Save room items
+      const items = roomItemGrades[i] || {};
+      for (const [itemName, condition] of Object.entries(items)) {
+        await sbWrite.from('inventory_items').insert([{
+          room_id: roomData.id,
+          item_name: itemName,
+          condition: condition,
+          notes: (roomItemNotes[i] || {})[itemName] || ''
+        }]);
+      }
+
+      // Save photos
+      const photos = roomPhotos[i] || [];
+      for (const photo of photos) {
+        await sbWrite.from('inventory_photos').insert([{
+          inventory_id: currentInventoryId,
+          room_id: roomData.id,
+          photo_url: photo.dataUrl,
+          caption: ''
+        }]);
+      }
+    }
+
+    // Save compliance data
+    const compData = {
+      inventory_id: currentInventoryId,
+      gas_reading: document.getElementById('gas-reading').value || null,
+      gas_photo_url: compPhotos['gas'] || null,
+      electric_reading: document.getElementById('elec-reading').value || null,
+      electric_photo_url: compPhotos['elec'] || null,
+      water_reading: document.getElementById('water-reading').value || null,
+      water_photo_url: compPhotos['water'] || null,
+      gas_supplier: document.getElementById('gas-supplier').value || null,
+      electric_supplier: document.getElementById('elec-supplier').value || null,
+      water_supplier: document.getElementById('water-supplier').value || null,
+      smoke_alarm_tested: compToggles['smoke'] || false,
+      smoke_alarm_photo_url: compPhotos['smoke'] || null,
+      co_alarm_tested: compToggles['co'] || false,
+      co_alarm_photo_url: compPhotos['co'] || null,
+      heat_sensor_tested: compToggles['heat'] || false,
+      heat_sensor_photo_url: compPhotos['heat'] || null,
+      keys_count: parseInt(document.getElementById('keys-count').value) || 0,
+      keys_photo_url: compPhotos['keys'] || null,
+      alarm_code_exists: compToggles['alarm'] || false,
+      alarm_code: document.getElementById('alarm-code').value || null,
+      alarm_code_photo_url: compPhotos['alarm'] || null
+    };
+    await sbWrite.from('inventory_compliance').insert([compData]);
+
+    // Save white goods
+    for (const wg of whiteGoods) {
+      await sbWrite.from('inventory_white_goods').insert([{
+        inventory_id: currentInventoryId,
+        appliance_name: wg.name,
+        condition: wg.condition,
+        photo_url: null
+      }]);
+    }
+
+    // Save signatures
+    if (agentName || agentSig || tenantName || tenantSig) {
+      await sbWrite.from('signatures').insert([{
+        inventory_id: currentInventoryId,
+        agent_name: agentName || null,
+        agent_signature_url: agentSig || null,
+        tenant_name: tenantName || null,
+        tenant_signature_url: tenantSig || null,
+        signed_at: new Date().toISOString()
+      }]);
+    }
+
+    // Mark complete
+    await sbWrite.from('inventories').update({status:'complete', updated_at: new Date().toISOString()}).eq('id', currentInventoryId);
+
+    showToast('Inspection complete!');
+    navigator.vibrate && navigator.vibrate([30,50,30]);
+    setTimeout(() => goHome(), 1500);
+  } catch(err) {
+    console.error(err);
+    showToast('Save failed - check connection');
+  }
+}
+
+
+// ---- PDF ----
+function generatePDF() {
+  const inv = currentInventory;
+  const date = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const type = currentType === 'check_in' ? 'CHECK IN' : 'CHECK OUT';
+  const reportId = (currentInventoryId||'').substring(0,8).toUpperCase();
+
+  let roomsHtml = '';
+  currentRooms.forEach((room, i) => {
+    const cond = roomConditions[i] || 'Not inspected';
+    const photos = roomPhotos[i] || [];
+    const notes = roomNotes[i] || '';
+    const items = roomItemGrades[i] || {};
+    const itemNotes = roomItemNotes[i] || {};
+    const condColor = cond==='Excellent'?'#059669':cond==='Good'?'#4f46e5':cond==='Poor'?'#dc2626':'#64748b';
+    const poorItems = Object.entries(items).filter(([,v]) => v==='Poor').map(([k]) => k);
+    const itemsHtml = Object.keys(items).length ? '<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:12px;"><thead><tr style="background:#f1f5f9;"><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;border:1px solid #e2e8f0;">Item</th><th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;border:1px solid #e2e8f0;width:90px;">Condition</th><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;border:1px solid #e2e8f0;">Notes</th></tr></thead><tbody>' +
+      Object.entries(items).map(([item,grade]) => {
+        const gc = grade==='Excellent'?'#059669':grade==='Good'?'#4f46e5':grade==='Poor'?'#dc2626':'#94a3b8';
+        return '<tr><td style="padding:5px 8px;border:1px solid #e2e8f0;">'+_escPdf(item)+'</td><td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:'+gc+';">'+grade+'</td><td style="padding:5px 8px;border:1px solid #e2e8f0;color:#64748b;">'+_escPdf(itemNotes[item]||'')+'</td></tr>';
+      }).join('') + '</tbody></table>' : '';
+
+    roomsHtml += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;">' +
+      '<div style="padding:10px 14px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="font-weight:700;font-size:14px;">'+_escPdf(room.name)+'</span>' +
+        '<span style="font-weight:800;color:'+condColor+';font-size:13px;">'+cond+'</span>' +
+      '</div>' +
+      (poorItems.length ? '<div style="padding:6px 14px;background:#fef2f2;border-bottom:1px solid #fecaca;font-size:11px;color:#dc2626;font-weight:600;">Issues requiring attention: '+poorItems.join(', ')+'</div>' : '') +
+      itemsHtml +
+      (photos.length ? '<div style="display:flex;gap:8px;padding:10px 14px;flex-wrap:wrap;">'+photos.map(p=>'<img src="'+p.dataUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;">').join('')+'</div>' : '') +
+      (notes ? '<div style="padding:6px 14px 10px;font-size:12px;color:#64748b;">'+_escPdf(notes)+'</div>' : '') +
+    '</div>';
+  });
+
+  const gasReading = document.getElementById('gas-reading').value;
+  const elecReading = document.getElementById('elec-reading').value;
+  const waterReading = document.getElementById('water-reading').value;
+  const compHtml = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;">' +
+    '<div style="padding:10px 14px;background:#1d4ed8;"><span style="font-weight:700;font-size:13px;color:#fff;">Compliance and Utilities</span></div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;width:50%;">Gas Reading</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+_escPdf(gasReading||'Not recorded')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Electric Reading</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+_escPdf(elecReading||'Not recorded')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Water Reading</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+_escPdf(waterReading||'Not recorded')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Smoke Alarm</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+(compToggles['smoke']?'<span style="color:#059669;font-weight:700;">Tested</span>':'Not tested')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">CO Alarm</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+(compToggles['co']?'<span style="color:#059669;font-weight:700;">Tested</span>':'Not tested')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Heat Sensor</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+(compToggles['heat']?'<span style="color:#059669;font-weight:700;">Tested</span>':'Not tested')+'</td></tr>' +
+      '<tr><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Keys Handed Over</td><td style="padding:7px 14px;border-bottom:1px solid #e2e8f0;">'+_escPdf(document.getElementById('keys-count').value||'0')+'</td></tr>' +
+      (whiteGoods.length ? '<tr><td style="padding:7px 14px;font-weight:600;" colspan="2">White Goods: '+whiteGoods.map(wg=>_escPdf(wg.name)+' ('+wg.condition+')').join(', ')+'</td></tr>' : '') +
+    '</table></div>';
+
+  const agentSigDataUrl = getSigDataUrl('sig-agent');
+  const tenantSigDataUrl = getSigDataUrl('sig-tenant');
+  const agentName = (document.getElementById('sig-agent-name') ? document.getElementById('sig-agent-name').value : '') || inv?.agent_name || '';
+  const tenantName = document.getElementById('sig-tenant-name') ? document.getElementById('sig-tenant-name').value : '';
+  const sigHtml = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:14px;overflow:hidden;page-break-inside:avoid;">' +
+    '<div style="padding:10px 14px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;"><span style="font-weight:700;font-size:13px;">Signatures</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;">' +
+      '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;margin-bottom:6px;">Agent: '+_escPdf(agentName)+'</div>' +
+        (agentSigDataUrl ? '<img src="'+agentSigDataUrl+'" style="width:100%;height:80px;object-fit:contain;border:1px solid #e2e8f0;border-radius:6px;background:#fff;">' : '<div style="height:80px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8;">Not signed</div>') +
+      '</div>' +
+      '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;margin-bottom:6px;">Tenant: '+_escPdf(tenantName)+'</div>' +
+        (tenantSigDataUrl ? '<img src="'+tenantSigDataUrl+'" style="width:100%;height:80px;object-fit:contain;border:1px solid #e2e8f0;border-radius:6px;background:#fff;">' : '<div style="height:80px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8;">Not signed</div>') +
+      '</div>' +
+    '</div>' +
+    '<div style="padding:8px 16px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;">Date: '+date+'</div>' +
+  '</div>';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quantum Inventory Report - '+reportId+'</title><style>@page{margin:16mm 14mm;}body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:20px;color:#0f172a;font-size:13px;line-height:1.4;}</style></head><body>' +
+    '<div style="background:#080f1e;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><h1 style="margin:0;font-size:20px;">Quantum <span style="color:#6366f1;">Inventory</span></h1><p style="margin:4px 0 0;opacity:0.5;font-size:11px;">Property Inspection Report - Powered by QReach</p></div>' +
+      '<div style="text-align:right;"><div style="font-size:10px;opacity:0.5;text-transform:uppercase;">Right Homes Bedford</div><div style="font-size:11px;font-weight:700;margin-top:2px;">'+date+'</div></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Property</div><div style="font-size:14px;font-weight:700;">'+_escPdf(inv ? inv.property_address : '')+'</div></div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Postcode</div><div style="font-size:14px;font-weight:700;">'+_escPdf(inv ? inv.postcode : '')+'</div></div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Inspection Type</div><div style="font-size:13px;font-weight:800;color:'+(currentType==='check_in'?'#059669':'#b45309')+';">'+type+'</div></div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Inspector</div><div style="font-size:14px;font-weight:700;">'+_escPdf(inv ? inv.agent_name : '')+'</div></div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Report ID</div><div style="font-size:13px;font-weight:700;font-family:monospace;">'+reportId+'</div></div>' +
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px;">Date</div><div style="font-size:13px;font-weight:700;">'+date+'</div></div>' +
+    '</div>' +
+    compHtml +
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;margin:16px 0 10px;">Room Inspection Detail</div>' +
+    roomsHtml +
+    sigHtml +
+    '<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;">Generated by Quantum Inventory - QReach - '+date+' - Report '+reportId+'</div>' +
+    '<script>window.onload=function(){window.print();}<\/script>' +
+  '</body></html>';
+
+  const win = window.open();
+  if (win) { win.document.write(html); win.document.close(); }
+  else {
+    const blob = new Blob([html], {type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventory-' + reportId + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Report downloaded');
+  }
+}
+
+// ---- OPEN EXISTING ----
+async function openInventory(id) {
+  const {data: inv} = await sbRead.from('inventories').select('*').eq('id',id).single();
+  if (!inv) return;
+
+  currentInventoryId = id;
+  currentInventory = inv;
+  currentType = inv.type;
+
+  const {data: rooms} = await sbRead.from('inventory_rooms').select('*').eq('inventory_id',id).order('sort_order');
+  const {data: photos} = await sbRead.from('inventory_photos').select('*').eq('inventory_id',id);
+  const {data: items} = await sbRead.from('inventory_items').select('*');
+
+  currentRooms = rooms && rooms.length ? rooms.map((r,i) => ({name:r.room_name, icon:'fa-door-open', index:i, dbId:r.id})) : [];
+  roomConditions = {}; roomNotes = {}; roomPhotos = {};
+  roomItemGrades = {}; roomItemNotes = {};
+
+  if (rooms) rooms.forEach((r,i) => {
+    roomConditions[i] = r.condition;
+    roomNotes[i] = r.notes || '';
+    const rPhotos = (photos||[]).filter(p => p.room_id === r.id);
+    roomPhotos[i] = rPhotos.map(p => ({dataUrl: p.photo_url}));
+    const rItems = (items||[]).filter(it => it.room_id === r.id);
+    roomItemGrades[i] = {};
+    roomItemNotes[i] = {};
+    rItems.forEach(it => {
+      roomItemGrades[i][it.item_name] = it.condition;
+      roomItemNotes[i][it.item_name] = it.notes || '';
+    });
+  });
+
+  document.getElementById('header-sub').innerText = inv.property_address;
+  renderRoomList();
+  showScreen('rooms');
+}
+
+// ---- HELPERS ----
+function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _escPdf(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let _toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.innerText = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+  loadRecent();
+  const theme = localStorage.getItem('qf_theme') || 'dark';
+  document.body.setAttribute('data-theme', theme);
+  updateThemeIcon(theme);
+
+  // Feed link - try to detect if opened from Quantum Feed
+  const feedUrl = document.referrer || 'https://app.quantumreachltd.workers.dev';
+  document.getElementById('feed-link').href = feedUrl;
+});
+
+// ── THEME ────────────────────────────────────────────────────
+function toggleTheme() {
+  var current = document.body.getAttribute('data-theme') || 'dark';
+  var next = current === 'dark' ? 'light' : 'dark';
+  document.body.setAttribute('data-theme', next);
+  localStorage.setItem('qf_theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  var icon = document.getElementById('theme-icon');
+  if (!icon) return;
+  if (theme === 'dark') {
+    icon.className = 'fa-solid fa-moon';
+  } else {
+    icon.className = 'fa-solid fa-sun';
+  }
+}
+
+// ── NAV ─────────────────────────────────────────────────────
+function toggleNav() {
+  sfxTap(); doVib(15);
+  var drawer = document.getElementById('nav-drawer');
+  var overlay = document.getElementById('nav-overlay');
+  var isOpen = drawer.style.display === 'flex';
+  drawer.style.display = isOpen ? 'none' : 'flex';
+  overlay.style.display = isOpen ? 'none' : 'block';
+}
+function closeNav() {
+  document.getElementById('nav-drawer').style.display = 'none';
+  document.getElementById('nav-overlay').style.display = 'none';
+}
+
+// ── PROPERTIES ───────────────────────────────────────────────
+let allProps = [], currentPropId = null;
+
+async function showPropertiesScreen() {
+  showScreen('properties');
+  document.getElementById('properties-list').innerHTML = '<div style="text-align:center;padding:30px;font-size:12px;color:var(--muted);">Loading...</div>';
+  const { data, error } = await sbRead.from('properties').select('*').order('address');
+  if (error || !data) { document.getElementById('properties-list').innerHTML = '<div style="text-align:center;padding:30px;font-size:12px;color:#ef4444;">Could not load properties</div>'; return; }
+  allProps = data;
+  document.getElementById('prop-count-label').innerText = data.length + ' properties';
+  renderProps(data);
+}
+
+function renderProps(props) {
+  if (!props.length) { document.getElementById('properties-list').innerHTML = '<div style="text-align:center;padding:24px;font-size:12px;color:var(--muted);">No properties found</div>'; return; }
+  document.getElementById('properties-list').innerHTML = props.map(p => {
+    return '<div class="prop-card" onclick="openPropDetail(\'' + p.id + '\')">'+  
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">' + _esc(p.address) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);">' + _esc(p.postcode || '') + '</div>' +
+          (p.landlord_name ? '<div style="font-size:11px;color:var(--muted-2);margin-top:3px;"><i class="fa-solid fa-user" style="font-size:9px;margin-right:3px;"></i>' + _esc(p.landlord_name) + '</div>' : '') +
+          (p.tenant_name ? '<div style="font-size:11px;color:var(--muted-2);margin-top:2px;"><i class="fa-solid fa-person" style="font-size:9px;margin-right:3px;"></i>' + _esc(p.tenant_name) + '</div>' : '') +
+        '</div>' +
+        '<i class="fa-solid fa-chevron-right" style="font-size:10px;color:var(--muted-2);margin-top:4px;"></i>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function filterProperties(q) {
+  const query = q.toLowerCase().trim();
+  if (!query) { renderProps(allProps); return; }
+  renderProps(allProps.filter(p => (p.address || '').toLowerCase().includes(query) || (p.postcode || '').toLowerCase().includes(query) || (p.landlord_name || '').toLowerCase().includes(query) || (p.tenant_name || '').toLowerCase().includes(query)));
+}
+
+async function openPropDetail(id) {
+  currentPropId = id;
+  const p = allProps.find(x => x.id === id);
+  if (!p) return;
+  showScreen('property-detail');
+  document.getElementById('pd-address').innerText = p.address || '';
+  document.getElementById('pd-postcode').innerText = p.postcode || '';
+  document.getElementById('pd-landlord').innerText = p.landlord_name || 'Not set';
+  document.getElementById('pd-tenant').innerText = p.tenant_name || 'Not set';
+  document.getElementById('pd-type').innerText = p.property_type || 'Not set';
+  document.getElementById('pd-end').innerText = p.tenancy_end ? new Date(p.tenancy_end).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : 'Not set';
+  const { data: invs } = await sbRead.from('inventories').select('*').eq('property_address', p.address).order('created_at', {ascending:false});
+  const div = document.getElementById('pd-inventories');
+  if (!invs || !invs.length) { div.innerHTML = '<div style="text-align:center;padding:20px;font-size:12px;color:var(--muted);">No inspections yet</div>'; return; }
+  div.innerHTML = invs.map(inv => '<div style="background:var(--panel);border:1.5px solid var(--border-strong);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:12px;font-weight:700;color:var(--text);">' + (inv.type === 'check_in' ? 'Check In' : 'Check Out') + '</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">' + new Date(inv.created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) + '</div></div><span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:5px;background:' + (inv.status === 'complete' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)') + ';color:' + (inv.status === 'complete' ? '#10b981' : '#f59e0b') + ';">' + (inv.status === 'complete' ? 'Done' : 'In Progress') + '</span></div>').join('');
+}
+
+function editPropertyModal() {
+  const p = allProps.find(x => x.id === currentPropId); if (!p) return;
+  document.getElementById('ep-type').value = p.property_type || 'Terraced';
+  document.getElementById('ep-landlord').value = p.landlord_name || '';
+  document.getElementById('ep-landlord-phone').value = p.landlord_phone || '';
+  document.getElementById('ep-tenant').value = p.tenant_name || '';
+  document.getElementById('ep-tenant-phone').value = p.tenant_phone || '';
+  document.getElementById('ep-start').value = p.tenancy_start || '';
+  document.getElementById('ep-end').value = p.tenancy_end || '';
+  document.getElementById('ep-rent').value = p.rent_amount || '';
+  const m = document.getElementById('edit-prop-modal'); m.style.display = 'flex'; m.style.alignItems = 'flex-end'; m.style.justifyContent = 'center';
+}
+
+async function savePropertyEdit() {
+  const updates = { property_type:document.getElementById('ep-type').value, landlord_name:document.getElementById('ep-landlord').value.trim(), landlord_phone:document.getElementById('ep-landlord-phone').value.trim(), tenant_name:document.getElementById('ep-tenant').value.trim(), tenant_phone:document.getElementById('ep-tenant-phone').value.trim(), tenancy_start:document.getElementById('ep-start').value||null, tenancy_end:document.getElementById('ep-end').value||null, rent_amount:document.getElementById('ep-rent').value?parseFloat(document.getElementById('ep-rent').value):null, updated_at:new Date().toISOString() };
+  const { error } = await sbWrite.from('properties').update(updates).eq('id', currentPropId);
+  if (error) { showToast('Could not save'); return; }
+  const idx = allProps.findIndex(x => x.id === currentPropId); if (idx > -1) allProps[idx] = Object.assign({}, allProps[idx], updates);
+  document.getElementById('edit-prop-modal').style.display = 'none';
+  openPropDetail(currentPropId); showToast('Property saved');
+}
+
+function startFromProperty() {
+  const p = allProps.find(x => x.id === currentPropId); if (!p) return;
+  showScreen('setup');
+  setTimeout(function() {
+    var addrEl = document.getElementById('setup-address'); if (addrEl) addrEl.value = p.address || '';
+    var pcEl = document.getElementById('setup-postcode'); if (pcEl) pcEl.value = p.postcode || '';
+    var agentEl = document.getElementById('setup-agent'); if (agentEl) agentEl.value = localStorage.getItem('qi_agent_name') || '';
+  }, 100);
+}
+
+// ── COMPLIANCE ───────────────────────────────────────────────
+let allComp = [], compFilter = 'all';
+const COMP_LABELS = {gas:'Gas Safety',epc:'EPC',eicr:'EICR',pat:'PAT Testing',hmo:'HMO Licence'};
+
+function ragStatus(expiry) {
+  if (!expiry) return 'none';
+  const days = Math.floor((new Date(expiry) - new Date()) / 86400000);
+  return days < 0 ? 'red' : days <= 30 ? 'red' : days <= 60 ? 'amber' : 'green';
+}
+function ragColor(rag) { return rag==='red'?'#ef4444':rag==='amber'?'#f59e0b':rag==='green'?'#10b981':'var(--muted)'; }
+
+async function showComplianceTracker() {
+  showScreen('compliance-tracker');
+  document.getElementById('compliance-list').innerHTML = '<div style="text-align:center;padding:30px;font-size:12px;color:var(--muted);">Loading...</div>';
+  const { data } = await sbRead.from('compliance').select('id,type,expiry_date,notes,property_id,properties(address)').order('expiry_date');
+  allComp = data || [];
+  renderComp();
+}
+
+function setCompFilter(f) {
+  compFilter = f;
+  ['all','gas','epc','eicr','pat'].forEach(function(x) {
+    var btn = document.getElementById('cf-' + x); if (!btn) return;
+    var active = x === f;
+    btn.style.background = active ? 'rgba(99,102,241,0.15)' : 'var(--panel-2)';
+    btn.style.borderColor = active ? 'rgba(99,102,241,0.4)' : 'var(--border-strong)';
+    btn.style.color = active ? '#6366f1' : 'var(--muted)';
+  });
+  renderComp();
+}
+
+function renderComp() {
+  var items = compFilter === 'all' ? allComp : allComp.filter(function(c) { return c.type === compFilter; });
+  var red = allComp.filter(function(c){return ragStatus(c.expiry_date)==='red';}).length;
+  var amber = allComp.filter(function(c){return ragStatus(c.expiry_date)==='amber';}).length;
+  var green = allComp.filter(function(c){return ragStatus(c.expiry_date)==='green';}).length;
+  document.getElementById('comp-red').innerText = red;
+  document.getElementById('comp-amber').innerText = amber;
+  document.getElementById('comp-green').innerText = green;
+  if (!items.length) { document.getElementById('compliance-list').innerHTML = '<div style="text-align:center;padding:30px;font-size:12px;color:var(--muted);">No certificates yet. Tap Add Certificate.</div>'; return; }
+  document.getElementById('compliance-list').innerHTML = items.map(function(c) {
+    var rag = ragStatus(c.expiry_date), col = ragColor(rag);
+    var days = c.expiry_date ? Math.floor((new Date(c.expiry_date)-new Date())/86400000) : null;
+    var dayLabel = days===null?'No date set':days<0?'Expired '+Math.abs(days)+' days ago':'Expires in '+days+' days';
+    var addr = (c.properties && c.properties.address) ? c.properties.address : 'Unknown property';
+    return '<div style="background:var(--panel);border:1.5px solid '+col+'44;border-left:4px solid '+col+';border-radius:14px;padding:14px 16px;margin-bottom:10px;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">' +
+        '<div><div style="font-size:13px;font-weight:700;color:var(--text);">'+(COMP_LABELS[c.type]||c.type)+'</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">'+_esc(addr)+'</div></div>' +
+        '<span style="font-size:9px;font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:'+col+'18;color:'+col+';border:1px solid '+col+'44;white-space:nowrap;margin-left:8px;">'+(rag==='red'?'URGENT':rag==='amber'?'DUE SOON':'VALID')+'</span>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:'+col+';">'+dayLabel+'</div>' +
+      (c.expiry_date?'<div style="font-size:10px;color:var(--muted-2);margin-top:2px;font-family:monospace;">'+new Date(c.expiry_date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'</div>':'') +
+      (c.notes?'<div style="font-size:11px;color:var(--muted);margin-top:6px;">'+_esc(c.notes)+'</div>':'') +
+    '</div>';
+  }).join('');
+}
+
+async function showAddCompModal() {
+  if (!allProps.length) { const {data} = await sbRead.from('properties').select('id,address').order('address'); allProps = data||[]; }
+  document.getElementById('ac-property').innerHTML = '<option value="">Select property...</option>' + allProps.map(function(p){return '<option value="'+p.id+'">'+_esc(p.address)+'</option>';}).join('');
+  document.getElementById('ac-expiry').value = '';
+  document.getElementById('ac-notes').value = '';
+  var m = document.getElementById('add-comp-modal'); m.style.display='flex'; m.style.alignItems='flex-end'; m.style.justifyContent='center';
+}
+function closeAddCompModal() { document.getElementById('add-comp-modal').style.display='none'; }
+
+async function saveCompCert() {
+  var propId = document.getElementById('ac-property').value;
+  var type = document.getElementById('ac-type').value;
+  var expiry = document.getElementById('ac-expiry').value;
+  var notes = document.getElementById('ac-notes').value.trim();
+  if (!propId) { showToast('Select a property'); return; }
+  if (!expiry) { showToast('Enter expiry date'); return; }
+  var {error} = await sbWrite.from('compliance').insert([{property_id:propId,type:type,expiry_date:expiry,notes:notes}]);
+  if (error) { showToast('Could not save'); return; }
+  closeAddCompModal(); showToast('Certificate saved'); showComplianceTracker();
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function showSettingsScreen() {
+  updateSoundToggles();
+  document.getElementById('s-agent').value = localStorage.getItem('qi_agent_name') || '';
+  document.getElementById('s-agency').value = localStorage.getItem('qi_agency_name') || 'Right Homes Bedford';
+  var ft = document.getElementById('s-footer'); if(ft) ft.value = localStorage.getItem('qi_footer') || '';
+  var dt = document.getElementById('s-default-type'); if(dt) dt.value = localStorage.getItem('qi_default_type') || 'Terraced';
+  var rd = document.getElementById('s-red-days'); if(rd) rd.value = localStorage.getItem('qi_red_days') || '30';
+  var ad = document.getElementById('s-amber-days'); if(ad) ad.value = localStorage.getItem('qi_amber_days') || '60';
+  showScreen('settings');
+}
+function saveSettings() {
+  localStorage.setItem('qi_agent_name', document.getElementById('s-agent').value.trim());
+  localStorage.setItem('qi_agency_name', document.getElementById('s-agency').value.trim());
+  var ft = document.getElementById('s-footer'); if(ft) localStorage.setItem('qi_footer', ft.value.trim());
+  var dt = document.getElementById('s-default-type'); if(dt) localStorage.setItem('qi_default_type', dt.value);
+  var rd = document.getElementById('s-red-days'); if(rd) localStorage.setItem('qi_red_days', rd.value);
+  var ad = document.getElementById('s-amber-days'); if(ad) localStorage.setItem('qi_amber_days', ad.value);
+  showToast('Settings saved');
+}
+
+
+// ── SOUND & VIBRATION ────────────────────────────────────────
+var _audioCtx = null;
+var sfxOn = localStorage.getItem('qi_sfx') !== 'false';
+var vibOn = localStorage.getItem('qi_vibrate') !== 'false';
+
+function _getCtx() {
+  if (!_audioCtx) { try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return _audioCtx;
+}
+
+function sfxTone(freq, dur, type) {
+  if (!sfxOn) return;
+  try {
+    var ctx = _getCtx(); if (!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+
+function sfxTap()   { sfxTone(600, 0.07, 'sine'); }
+function sfxSave()  { sfxTone(660, 0.1, 'sine'); setTimeout(function(){ sfxTone(880, 0.1, 'sine'); }, 110); }
+function sfxNav()   { sfxTone(500, 0.06, 'sine'); }
+function sfxPhoto() { sfxTone(880, 0.12, 'triangle'); }
+function sfxDone()  { sfxTone(660, 0.1, 'sine'); setTimeout(function(){ sfxTone(880, 0.08, 'sine'); setTimeout(function(){ sfxTone(1100, 0.15, 'sine'); }, 100); }, 100); }
+
+function doVib(pattern) {
+  if (!vibOn) return;
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+
+function toggleSfx() {
+  sfxOn = !sfxOn;
+  localStorage.setItem('qi_sfx', sfxOn);
+  var el = document.getElementById('sfx-state');
+  if (el) { el.innerText = sfxOn ? 'On' : 'Off'; el.style.color = sfxOn ? '#10b981' : 'var(--muted)'; }
+}
+function toggleVib() {
+  vibOn = !vibOn;
+  localStorage.setItem('qi_vibrate', vibOn);
+  var el = document.getElementById('vib-state');
+  if (el) { el.innerText = vibOn ? 'On' : 'Off'; el.style.color = vibOn ? '#10b981' : 'var(--muted)'; }
+}
+function updateSoundToggles() {
+  var sfxEl = document.getElementById('sfx-state');
+  var vibEl = document.getElementById('vib-state');
+  if (sfxEl) { sfxEl.innerText = sfxOn ? 'On' : 'Off'; sfxEl.style.color = sfxOn ? '#10b981' : 'var(--muted)'; }
+  if (vibEl) { vibEl.innerText = vibOn ? 'On' : 'Off'; vibEl.style.color = vibOn ? '#10b981' : 'var(--muted)'; }
+}
+
+
+</script>
+</body>
+</html>
