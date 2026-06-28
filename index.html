@@ -13,13 +13,18 @@
   --g:#1e3a5f; --g2:#0f2341; --g3:#080f1e;
   --gold:#6366f1; --gold2:#818cf8;
   --gold3:rgba(99,102,241,0.12); --gold4:rgba(99,102,241,0.25);
-  --cream:#f5f0e8; --cream2:#ede5d4;
-  --bg:#f5f0e8; --panel:#ffffff; --panel-2:#f5f0e8; --panel-3:#ede5d4;
-  --text:#111111; --muted:#5a5a5a; --muted-2:#888888;
-  --border:rgba(30,58,95,0.12); --border-strong:rgba(13,79,42,0.22);
-  --accent:var(--g); --emerald:#10b981; --amber:#f59e0b;
-  --red:#b91c1c; --maroon:#7f1d1d;
-  --shadow-sm:0 1px 3px rgba(2,26,14,0.08),0 1px 2px rgba(2,26,14,0.06);
+  --bg:#080f1e; --panel:#0f2341; --panel-2:#080f1e; --panel-3:#060d1a;
+  --text:#e2e8f0; --muted:#94a3b8; --muted-2:#64748b;
+  --border:rgba(99,102,241,0.15); --border-strong:rgba(99,102,241,0.25);
+  --accent:var(--gold); --emerald:#059669; --amber:#f59e0b;
+  --red:#ef4444; --maroon:#7f1d1d;
+  --shadow-sm:0 1px 3px rgba(8,15,30,0.4),0 1px 2px rgba(8,15,30,0.3);
+}
+body[data-theme="light"] {
+  --bg:#f8fafc; --panel:#ffffff; --panel-2:#f1f5f9; --panel-3:#e2e8f0;
+  --text:#0f172a; --muted:#64748b; --muted-2:#94a3b8;
+  --border:rgba(15,35,65,0.1); --border-strong:rgba(15,35,65,0.2);
+  --red:#b91c1c;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -99,7 +104,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .accent-general { border-left:4px solid var(--muted-2); --accent-rgb:148,163,184; }
 .accent-emergency { border-left:4px solid #ef4444; --accent-rgb:239,68,68; }
 .accent-maintenance { border-left:4px solid #f59e0b; --accent-rgb:245,158,11; }
-.accent-viewing { border-left:4px solid #10b981; --accent-rgb:16,185,129; }
+.accent-viewing { border-left:4px solid #059669; --accent-rgb:5,150,105; }
 .accent-other { border-left:4px solid var(--muted-2); --accent-rgb:148,163,184; }
 .accent-urgent { border-left:4px solid var(--red); --accent-rgb:185,28,28; }
 
@@ -109,7 +114,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .status-in-progress { background:rgba(16,185,129,0.1); color:var(--emerald); border:1px solid rgba(16,185,129,0.2); }
 .status-completed { background:rgba(148,163,184,0.15); color:var(--muted); border:1px solid rgba(148,163,184,0.3); }
 .status-urgent { background:rgba(185,28,28,0.1); color:var(--red); border:1px solid rgba(185,28,28,0.2); }
-.status-to-contact { background:rgba(212,168,15,0.1); color:#92680a; border:1px solid rgba(212,168,15,0.25); }
+.status-to-contact { background:rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.3); }
 .status-review { background:rgba(124,58,237,0.1); color:#7c3aed; border:1px solid rgba(124,58,237,0.2); }
 .status-no-action { background:rgba(100,116,139,0.12); color:var(--muted); border:1px solid rgba(100,116,139,0.25); }
 .status-urgent.pulse { animation:urgent-pulse 1.6s infinite; }
@@ -273,6 +278,9 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
       <button id="sync-btn" onclick="manualRefresh()" class="icon-button" title="Sync">
         <i id="sync-icon" class="fa-solid fa-rotate" style="font-size:12px;"></i>
       </button>
+      <button onclick="toggleFeedTheme()" id="theme-toggle-btn" class="icon-button" title="Toggle light/dark">
+        <i id="theme-toggle-icon" class="fa-solid fa-moon" style="font-size:12px;"></i>
+      </button>
       <button onclick="openInsightsModal()" class="icon-button" title="Insights">
         <i class="fa-solid fa-chart-pie" style="font-size:12px;"></i>
       </button>
@@ -339,24 +347,24 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
   <section class="feed-panel" id="feed-view">
     <!-- STATS ROW - always visible, not scrollable -->
     <div id="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 12px 4px;background:var(--bg);flex-shrink:0;">
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid var(--gold2);text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #6366f1;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Total</div>
         <div id="s-total" style="font-size:20px;font-weight:800;color:var(--text);line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">All</div>
       </div>
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid var(--amber);text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #818cf8;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Contact</div>
-        <div id="s-contact" style="font-size:20px;font-weight:800;color:var(--amber);line-height:1.15;margin:1px 0;">—</div>
+        <div id="s-contact" style="font-size:20px;font-weight:800;color:#818cf8;line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">Awaiting</div>
       </div>
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid var(--g);text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #a5b4fc;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Today</div>
-        <div id="s-today" style="font-size:20px;font-weight:800;color:var(--g);line-height:1.15;margin:1px 0;">—</div>
+        <div id="s-today" style="font-size:20px;font-weight:800;color:#a5b4fc;line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">New</div>
       </div>
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid var(--emerald);text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #059669;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Done</div>
-        <div id="s-done" style="font-size:20px;font-weight:800;color:var(--emerald);line-height:1.15;margin:1px 0;">—</div>
+        <div id="s-done" style="font-size:20px;font-weight:800;color:#059669;line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">Resolved</div>
       </div>
     </div>
@@ -521,7 +529,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
         <div class="feed-subtitle">Agency command centre</div>
       </div>
       <div style="display:flex;gap:6px;">
-        <button onclick="openChat()" class="action-button" title="Team Chat" style="gap:5px;"><i class="fa-solid fa-comments" style="font-size:11px;"></i><span style="font-size:10px;">Chat</span></button>
+        <button onclick="openChat()" class="action-button" title="Team Chat" style="gap:5px;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(99,102,241,0.15),rgba(6,182,212,0.15));border:1px solid rgba(99,102,241,0.45);box-shadow:0 0 10px rgba(99,102,241,0.35),0 0 20px rgba(168,85,247,0.15);"><i class="fa-solid fa-comments" style="font-size:11px;background:linear-gradient(135deg,#a855f7,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"></i><span style="font-size:10px;background:linear-gradient(135deg,#a855f7,#6366f1,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Chat</span></button>
         <button onclick="toggleAssigneeFilter()" id="task-assignee-btn" class="action-button"><i class="fa-solid fa-user text-xs"></i><span id="task-assignee-label">Everyone</span></button>
         <button onclick="openAddColumn()" class="action-button" title="Add column"><i class="fa-solid fa-plus text-xs"></i></button>
       </div>
@@ -1208,7 +1216,19 @@ function startAutoRefresh() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
+function toggleFeedTheme() {
+  var theme = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('qf_theme', theme);
+  document.getElementById('theme-toggle-icon').className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  var theme = localStorage.getItem('qf_theme') || 'dark';
+  document.body.setAttribute('data-theme', theme);
+  var icon = document.getElementById('theme-toggle-icon');
+  if (icon) icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+
   loadMyProfile();
   if (initSupabase()) {
     fetchSupabase();
