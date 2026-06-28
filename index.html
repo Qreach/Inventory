@@ -114,7 +114,7 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
 .status-in-progress { background:rgba(16,185,129,0.1); color:var(--emerald); border:1px solid rgba(16,185,129,0.2); }
 .status-completed { background:rgba(148,163,184,0.15); color:var(--muted); border:1px solid rgba(148,163,184,0.3); }
 .status-urgent { background:rgba(185,28,28,0.1); color:var(--red); border:1px solid rgba(185,28,28,0.2); }
-.status-to-contact { background:rgba(79,70,229,0.18); color:#c7d2fe; border:1px solid rgba(79,70,229,0.45); }
+.status-to-contact { background:transparent; color:var(--text); border:1.5px solid var(--border-strong); font-weight:700; }
 .status-review { background:rgba(124,58,237,0.1); color:#7c3aed; border:1px solid rgba(124,58,237,0.2); }
 .status-no-action { background:rgba(100,116,139,0.12); color:var(--muted); border:1px solid rgba(100,116,139,0.25); }
 .status-urgent.pulse { animation:urgent-pulse 1.6s infinite; }
@@ -352,14 +352,14 @@ body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color
         <div id="s-total" style="font-size:20px;font-weight:800;color:var(--text);line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">All</div>
       </div>
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #d97706;text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #818cf8;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Contact</div>
-        <div id="s-contact" style="font-size:20px;font-weight:800;color:#d97706;line-height:1.15;margin:1px 0;">—</div>
+        <div id="s-contact" style="font-size:20px;font-weight:800;color:#818cf8;line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">Awaiting</div>
       </div>
-      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #0891b2;text-align:center;">
+      <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #a5b4fc;text-align:center;">
         <div style="font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted-2);">Today</div>
-        <div id="s-today" style="font-size:20px;font-weight:800;color:#0891b2;line-height:1.15;margin:1px 0;">—</div>
+        <div id="s-today" style="font-size:20px;font-weight:800;color:#a5b4fc;line-height:1.15;margin:1px 0;">—</div>
         <div style="font-size:8px;color:var(--muted-2);">New</div>
       </div>
       <div style="background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:7px 4px;border-top:2px solid #059669;text-align:center;">
